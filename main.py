@@ -123,4 +123,8 @@ plt.xlabel("Predicted")
 plt.ylabel("True")
 plt.title(f"Confusion Matrix - {MODEL_NAME.upper()}")
 plt.show()
-        
+
+# Save final trained global model
+model_path = f"outputs/{MODEL_NAME}_global.pth"
+torch.save(global_model.state_dict(), model_path)
+print(f"✅ Global model saved at {model_path}")

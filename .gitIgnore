@@ -1,3 +1,4 @@
 dataset/
 SK_FL.ipynb
 __pycache__/
+*.pth
