@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 import cv2
+import time
 
 # add project root so imports work
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -38,26 +39,37 @@ def inference(model, input_tensor):
         pred_class = torch.argmax(probs, dim=1).item()
     return pred_class, probs[0][pred_class].item()
 
-def local_update(model, input_tensor, true_label, save_path="outputs/local_update.pth"):
+def local_update(model, input_tensor, true_label, client_id, save_dir="outputs"):
     model.train()
     target = torch.tensor([true_label]).to(DEVICE)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
 
+    last_loss = None
     for epoch in range(2):  # fine-tune for 2 epochs
         optimizer.zero_grad()
         output = model(input_tensor)
         loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
-        print(f"[Local Update] Epoch {epoch+1}, Loss: {loss.item():.4f}")
+        last_loss = loss.item()
+        print(f"[Local Update] Epoch {epoch+1}, Loss: {last_loss:.4f}")
+
+    # Unique name with timestamp and client Id
+    os.makedirs(save_dir, exist_ok=True)
+    filename = f"client{client_id}_update_{int(time.time())}.pth"
+    save_path = os.path.join(save_dir, filename)
 
     torch.save(model.state_dict(), save_path)
-    print(f"Local update complete ✅ (saved to {save_path})")
+    print(f"[Client {client_id}] Local update complete ✅ ({save_path})")
+
+    return last_loss
+
 
 
 # ================== MAIN ==================
 if __name__ == "__main__":
     img_path = input("Enter path to image: ").strip()
+    client_id = input("Enter client ID: ").strip()
     model_path = input("Enter path to model [default: outputs/resnet_global.pth]: ").strip()
     if model_path == "":
         model_path = "outputs/resnet_global.pth"
